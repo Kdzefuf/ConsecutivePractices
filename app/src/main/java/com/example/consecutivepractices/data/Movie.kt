@@ -7,5 +7,6 @@ data class Movie(
     val rating: Double,
     val genre: String,
     val director: String,
-    val synopsis: String
+    val synopsis: String,
+    val imageUrl: String = ""
 )

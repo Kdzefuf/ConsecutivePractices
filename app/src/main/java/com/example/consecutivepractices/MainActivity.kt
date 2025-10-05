@@ -63,10 +63,10 @@ class MainActivity : ComponentActivity() {
 fun shareMovie(context: android.content.Context, movie: Movie) {
     val shareIntent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, "Check out this movie!")
-        putExtra(Intent.EXTRA_TEXT, "Movie: ${movie.title} (${movie.year})\nRating: ${movie.rating}\nGenre: ${movie.genre}\nDirector: ${movie.director}\nSynopsis: ${movie.synopsis}\nShare this awesome movie!")
+        putExtra(Intent.EXTRA_SUBJECT, "Посмотрите этот фильм!")
+        putExtra(Intent.EXTRA_TEXT, "Фильм: ${movie.title} (${movie.year})\nРейтинг: ${movie.rating}\nЖанр: ${movie.genre}\nРежиссер: ${movie.director}\nОписание: ${movie.synopsis}\nПоделитесь этим потрясающим фильмом!")
     }
-    context.startActivity(Intent.createChooser(shareIntent, "Share via"))
+    context.startActivity(Intent.createChooser(shareIntent, "Поделиться"))
 }
 
 @Composable
@@ -75,26 +75,26 @@ fun BottomNavigationBar(navController: androidx.navigation.NavController, curren
         NavigationBarItem(
             selected = currentRoute == "home",
             onClick = { navController.navigate("home") { launchSingleTop = true } },
-            icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
-            label = { Text("Home") }
+            icon = { Icon(Icons.Filled.Home, contentDescription = "Домой") },
+            label = { Text("Домой") }
         )
         NavigationBarItem(
             selected = currentRoute == "movie_list",
             onClick = { navController.navigate("movie_list") { launchSingleTop = true } },
-            icon = { Icon(Icons.Filled.Menu, contentDescription = "Movies") },
-            label = { Text("Movies") }
+            icon = { Icon(Icons.Filled.Menu, contentDescription = "Фильмы") },
+            label = { Text("Фильмы") }
         )
         NavigationBarItem(
             selected = currentRoute == "video",
             onClick = { navController.navigate("video") { launchSingleTop = true } },
-            icon = { Icon(Icons.Filled.PlayArrow, contentDescription = "Video") },
-            label = { Text("Video") }
+            icon = { Icon(Icons.Filled.PlayArrow, contentDescription = "Видео") },
+            label = { Text("Видео") }
         )
         NavigationBarItem(
             selected = currentRoute == "notifications",
             onClick = { navController.navigate("notifications") { launchSingleTop = true } },
-            icon = { Icon(Icons.Filled.Notifications, contentDescription = "Notifications") },
-            label = { Text("Bell") }
+            icon = { Icon(Icons.Filled.Notifications, contentDescription = "Уведомления") },
+            label = { Text("Уведомления") }
         )
     }
 }

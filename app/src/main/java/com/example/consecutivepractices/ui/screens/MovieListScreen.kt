@@ -33,10 +33,10 @@ fun MovieListScreen(navController: NavController) {
 
     Column {
         TopAppBar(
-            title = { Text("Movie List") },
+            title = { Text("Список фильмов") },
             actions = {
-                IconButton(onClick = { /* Add functionality later */ }) {
-                    Icon(Icons.Filled.Add, contentDescription = "Add Movie")
+                IconButton(onClick = { }) {
+                    Icon(Icons.Filled.Add, contentDescription = "Добавить фильм")
                 }
             },
         )
@@ -44,7 +44,7 @@ fun MovieListScreen(navController: NavController) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             LazyColumn {
                 items(viewModel.movies) { movie ->
-                    Row(modifier = Modifier.padding(6.dp).background(Color.Gray)) {
+                    Row(modifier = Modifier.padding(6.dp)) {
                         Text(text = "${movie.title} (${movie.year}) - ${movie.rating}",
                             modifier = Modifier.clickable {
                                 navController.navigate("movie_details/${movie.id}")

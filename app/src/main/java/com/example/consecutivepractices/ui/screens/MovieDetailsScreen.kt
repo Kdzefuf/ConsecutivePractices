@@ -1,10 +1,15 @@
 package com.example.consecutivepractices.ui.screens
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -18,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import com.example.consecutivepractices.viewmodel.MovieViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.consecutivepractices.shareMovie
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,7 +34,7 @@ fun MovieDetailsScreen(movieId: Int?, navController: androidx.navigation.NavCont
     val movie = movieId?.let { viewModel.getMovieById(it) }
     val context = LocalContext.current
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val movieId = navBackStackEntry?.arguments?.getString("movieId")?.toIntOrNull()
+    val currentMovieId = navBackStackEntry?.arguments?.getString("movieId")?.toIntOrNull()
 
     Column {
         TopAppBar(
@@ -46,24 +53,46 @@ fun MovieDetailsScreen(movieId: Int?, navController: androidx.navigation.NavCont
             }
         )
 
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
             movie?.let {
+                if (it.imageUrl.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp)
+                            .padding(bottom = 16.dp)
+                    ) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(it.imageUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Постер для ${it.title}",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
                 val details = listOf(
-                    "Title" to it.title,
-                    "Year" to it.year.toString(),
-                    "Rating" to it.rating.toString(),
-                    "Genre" to it.genre,
-                    "Director" to it.director,
-                    "Synopsis" to it.synopsis
+                    "Название" to it.title,
+                    "Год" to it.year.toString(),
+                    "Рейтинг" to it.rating.toString(),
+                    "Жанр" to it.genre,
+                    "Режиссер" to it.director,
+                    "Описание" to it.synopsis
                 )
+
                 details.forEach { (label, value) ->
                     Text(
                         text = "$label: $value",
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
-            } ?: Text(text = "Movie not found")
+            } ?: Text(text = "Фильм не найден")
         }
     }
-
 }
