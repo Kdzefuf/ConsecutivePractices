@@ -3,9 +3,9 @@ package com.example.consecutivepractices
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
@@ -36,6 +36,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             MovieAppTheme {
                 val navController = rememberNavController()
@@ -45,7 +46,6 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     topBar = {
                         when (currentRoute) {
-                            NavRoutes.MOVIE_LIST -> MovieListTopAppBar()
                             NavRoutes.MOVIE_DETAILS -> MovieDetailsTopAppBar()
                         }
                     },
@@ -75,19 +75,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MovieListTopAppBar() {
-    TopAppBar(
-        title = { Text("Список фильмов") },
-        actions = {
-            IconButton(onClick = { /* Add functionality later */ }) {
-                Icon(Icons.Default.Add, contentDescription = "Добавить фильм")
-            }
-        }
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
