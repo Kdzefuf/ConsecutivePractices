@@ -1,11 +1,18 @@
 package com.example.consecutivepractices.viewmodel
 
-import androidx.compose.runtime.mutableStateListOf
+import android.content.Context
+import android.content.Intent
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.example.consecutivepractices.data.Movie
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class MovieViewModel : ViewModel() {
-    private val _movies = mutableStateListOf(
+@HiltViewModel
+class MovieDetailsViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
+    private val movies = listOf(
         Movie(
             id = 1,
             title = "Начало",
@@ -38,7 +45,23 @@ class MovieViewModel : ViewModel() {
         )
     )
 
-    val movies: List<Movie> get() = _movies
+    val movie: Movie?
+        get() {
+            // Получаем movieId как String и конвертируем в Int
+            val movieIdString = savedStateHandle.get<String>("movieId")
+            return movieIdString?.toIntOrNull()?.let { movieId ->
+                movies.find { it.id == movieId }
+            }
+        }
 
-    fun getMovieById(id: Int): Movie? = _movies.find { it.id == id }
+    fun shareMovie(context: Context) {
+        movie?.let {
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, "Посмотрите этот фильм!")
+                putExtra(Intent.EXTRA_TEXT, "Фильм: ${it.title} (${it.year})\nРейтинг: ${it.rating}\nЖанр: ${it.genre}\nРежиссер: ${it.director}\nОписание: ${it.synopsis}\nПоделитесь этим потрясающим фильмом!")
+            }
+            context.startActivity(Intent.createChooser(shareIntent, "Поделиться"))
+        }
+    }
 }
