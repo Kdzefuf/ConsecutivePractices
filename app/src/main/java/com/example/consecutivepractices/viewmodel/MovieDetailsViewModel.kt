@@ -47,7 +47,6 @@ class MovieDetailsViewModel @Inject constructor(
 
     val movie: Movie?
         get() {
-            // Получаем movieId как String и конвертируем в Int
             val movieIdString = savedStateHandle.get<String>("movieId")
             return movieIdString?.toIntOrNull()?.let { movieId ->
                 movies.find { it.id == movieId }
