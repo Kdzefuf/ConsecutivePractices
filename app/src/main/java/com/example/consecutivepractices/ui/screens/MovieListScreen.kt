@@ -51,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.consecutivepractices.ui.state.MovieListState
 import com.example.consecutivepractices.viewmodel.MovieListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,15 +60,16 @@ fun MovieListScreen(
     navController: NavController,
     viewModel: MovieListViewModel = hiltViewModel()
 ) {
-    val movies by viewModel.movies.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val state by viewModel.state.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
-    var isSearching by remember { mutableStateOf(false) }
+    val isSearching = when (state) {
+        is MovieListState.Success -> (state as MovieListState.Success).isSearching
+        else -> false
+    }
 
     LaunchedEffect(Unit) {
-        if (movies.isEmpty()) {
+        if ((state as? MovieListState.Success)?.movies?.isEmpty() == true) {
             viewModel.loadPopularMovies()
         }
     }
@@ -96,8 +98,9 @@ fun MovieListScreen(
                 actions = {
                     IconButton(
                         onClick = {
-                            isSearching = !isSearching
-                            if (!isSearching) {
+                            val newSearchState = !isSearching
+                            viewModel.setSearchState(newSearchState, searchQuery)
+                            if (!newSearchState) {
                                 searchQuery = ""
                                 viewModel.loadPopularMovies()
                             }
@@ -128,115 +131,110 @@ fun MovieListScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            if (isLoading && movies.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+            when (val currentState = state) {
+                is MovieListState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
-                        Text("Загрузка фильмов...")
-                    }
-                }
-            }
-
-            error?.let { errorMessage ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = errorMessage,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center
-                        )
-                        Button(
-                            onClick = {
-                                viewModel.clearError()
-                                if (isSearching && searchQuery.isNotBlank()) {
-                                    viewModel.searchMovies(searchQuery)
-                                } else {
-                                    viewModel.loadPopularMovies()
-                                }
-                            }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Text("Повторить")
+                            CircularProgressIndicator()
+                            Text("Загрузка фильмов...")
                         }
                     }
                 }
-            }
 
-            if (movies.isNotEmpty()) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(movies) { movie ->
-                        MovieItem(
-                            movie = movie,
-                            onItemClick = {
-                                navController.navigate("movie_details/${movie.id}") {
-                                    launchSingleTop = true
+                is MovieListState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = currentState.message,
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center
+                            )
+                            Button(
+                                onClick = {
+                                    viewModel.clearError()
+                                    if (isSearching && searchQuery.isNotBlank()) {
+                                        viewModel.searchMovies(searchQuery)
+                                    } else {
+                                        viewModel.loadPopularMovies()
+                                    }
                                 }
-                            }
-                        )
-                    }
-
-                    item {
-                        if (isLoading && movies.isNotEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
                             ) {
-                                CircularProgressIndicator()
-                            }
-                        } else if (movies.isNotEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Button(
-                                    onClick = { viewModel.loadNextPage() }
-                                ) {
-                                    Text("Загрузить еще")
-                                }
+                                Text("Повторить")
                             }
                         }
                     }
                 }
-            }
 
-            if (!isLoading && movies.isEmpty() && error == null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (isSearching && searchQuery.isNotBlank()) {
-                            "Фильмы по запросу '$searchQuery' не найдены"
-                        } else {
-                            "Фильмы не найдены"
-                        },
-                        textAlign = TextAlign.Center,
-                        color = Color.Gray
-                    )
+                is MovieListState.Success -> {
+                    val movies = currentState.movies
+
+                    if (movies.isNotEmpty()) {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(movies) { movie ->
+                                MovieItem(
+                                    movie = movie,
+                                    onItemClick = {
+                                        navController.navigate("movie_details/${movie.id}") {
+                                            launchSingleTop = true
+                                        }
+                                    }
+                                )
+                            }
+
+                            item {
+                                if (currentState.canLoadMore && !currentState.isSearching) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Button(
+                                            onClick = { viewModel.loadNextPage() }
+                                        ) {
+                                            Text("Загрузить еще")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (currentState.isSearching && currentState.searchQuery.isNotBlank()) {
+                                    "Фильмы по запросу '${currentState.searchQuery}' не найдены"
+                                } else {
+                                    "Фильмы не найдены"
+                                },
+                                textAlign = TextAlign.Center,
+                                color = Color.Gray
+                            )
+                        }
+                    }
                 }
             }
         }

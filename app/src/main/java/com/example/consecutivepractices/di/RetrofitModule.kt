@@ -1,6 +1,8 @@
 package com.example.consecutivepractices.di
 
+import com.example.consecutivepractices.data.mapper.MovieMapper
 import com.example.consecutivepractices.data.remote.KinopoiskApi
+import com.example.consecutivepractices.util.Config
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -17,9 +19,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object RetrofitModule {
-
-    private const val BASE_URL = "https://api.kinopoisk.dev/"
-    private const val API_KEY = "Y08AA80-3XDMPKN-JKTG8HA-1VE87BT"
 
     @Provides
     @Singleton
@@ -39,7 +38,7 @@ object RetrofitModule {
         val authInterceptor = Interceptor { chain ->
             val originalRequest = chain.request()
             val requestWithHeaders = originalRequest.newBuilder()
-                .header("X-API-KEY", API_KEY)
+                .header("X-API-KEY", Config.API_KEY)
                 .build()
             chain.proceed(requestWithHeaders)
         }
@@ -54,7 +53,7 @@ object RetrofitModule {
     @Singleton
     fun provideRetrofit(moshi: Moshi, okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(Config.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
@@ -64,5 +63,11 @@ object RetrofitModule {
     @Singleton
     fun provideKinopoiskApi(retrofit: Retrofit): KinopoiskApi {
         return retrofit.create(KinopoiskApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMovieMapper(): MovieMapper {
+        return MovieMapper()
     }
 }

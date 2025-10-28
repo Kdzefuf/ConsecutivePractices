@@ -1,5 +1,6 @@
 package com.example.consecutivepractices.data.repository
 
+import com.example.consecutivepractices.data.mapper.MovieMapper
 import com.example.consecutivepractices.data.remote.KinopoiskApi
 import com.example.consecutivepractices.domain.models.Movie
 import com.example.consecutivepractices.domain.repository.MovieRepository
@@ -10,7 +11,8 @@ import javax.inject.Singleton
 
 @Singleton
 class MovieRepositoryImpl @Inject constructor(
-    private val api: KinopoiskApi
+    private val api: KinopoiskApi,
+    private val movieMapper: MovieMapper
 ) : MovieRepository {
 
     override suspend fun getPopularMovies(
@@ -28,7 +30,7 @@ class MovieRepositoryImpl @Inject constructor(
                 minRating = minRating,
                 genre = genre
             )
-            Result.success(response.docs.map { it.toMovie() })
+            Result.success(response.docs.map { movieMapper.mapToDomain(it) })
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -41,7 +43,7 @@ class MovieRepositoryImpl @Inject constructor(
                 limit = limit,
                 query = query
             )
-            Result.success(response.docs.map { it.toMovie() })
+            Result.success(response.docs.map { movieMapper.mapToDomain(it) })
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -50,7 +52,7 @@ class MovieRepositoryImpl @Inject constructor(
     override suspend fun getMovieDetails(movieId: Int): Result<Movie> = withContext(Dispatchers.IO) {
         try {
             val response = api.getMovieById(id = movieId)
-            Result.success(response.toMovie())
+            Result.success(movieMapper.mapToDomain(response))
         } catch (e: Exception) {
             Result.failure(Exception("Ошибка загрузки деталей фильма: ${e.message}"))
         }
