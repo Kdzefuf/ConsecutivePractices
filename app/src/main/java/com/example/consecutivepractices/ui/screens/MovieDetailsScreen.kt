@@ -14,6 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
@@ -55,6 +57,7 @@ fun MovieDetailsScreen(
     viewModel: MovieDetailsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val isFavorite by viewModel.isFavorite.collectAsState()
     val context = LocalContext.current
 
     Scaffold(
@@ -73,6 +76,19 @@ fun MovieDetailsScreen(
                     }
                 },
                 actions = {
+                    // Кнопка избранного
+                    if (state is MovieDetailsState.Success) {
+                        IconButton(
+                            onClick = { viewModel.toggleFavorite() }
+                        ) {
+                            Icon(
+                                if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = if (isFavorite) "Удалить из избранного" else "Добавить в избранное",
+                                tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
                     if (state is MovieDetailsState.Success) {
                         IconButton(onClick = { viewModel.shareMovie(context) }) {
                             Icon(Icons.Default.Share, contentDescription = "Поделиться")
@@ -196,6 +212,26 @@ fun MovieDetailsScreen(
                                     style = MaterialTheme.typography.titleMedium,
                                     color = Color.Gray
                                 )
+
+                                // Индикатор избранного
+                                Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+                                Text(
+                                    text = "•",
+                                    color = Color.Gray
+                                )
+                                Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+                                Icon(
+                                    if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = if (isFavorite) "В избранном" else "Не в избранном",
+                                    tint = if (isFavorite) Color.Red else Color.Gray,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.padding(horizontal = 4.dp))
+                                Text(
+                                    text = if (isFavorite) "В избранном" else "Добавить в избранное",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (isFavorite) Color.Red else Color.Gray
+                                )
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -216,6 +252,23 @@ fun MovieDetailsScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
                             )
+
+                            // Кнопка для добавления/удаления из избранного
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = { viewModel.toggleFavorite() },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+                                Text(
+                                    text = if (isFavorite) "Удалить из избранного" else "Добавить в избранное"
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))

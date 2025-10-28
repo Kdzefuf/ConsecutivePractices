@@ -2,42 +2,70 @@ package com.example.consecutivepractices.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.consecutivepractices.data.preferences.FilterData
+import com.example.consecutivepractices.data.preferences.FilterPreferences
+import com.example.consecutivepractices.domain.repository.MovieRepository
 import com.example.consecutivepractices.domain.usecase.GetPopularMoviesUseCase
 import com.example.consecutivepractices.domain.usecase.SearchMoviesUseCase
 import com.example.consecutivepractices.ui.state.MovieListState
 import com.example.consecutivepractices.util.ErrorHandler
+import com.example.consecutivepractices.util.FilterBadgeManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MovieListViewModel @Inject constructor(
-    private val getPopularMoviesUseCase: GetPopularMoviesUseCase,
-    private val searchMoviesUseCase: SearchMoviesUseCase,
-    private val errorHandler: ErrorHandler
+    private val movieRepository: MovieRepository,
+    private val errorHandler: ErrorHandler,
+    private val filterPreferences: FilterPreferences,
+    private val filterBadgeManager: FilterBadgeManager
 ) : ViewModel() {
+
+    private val getPopularMoviesUseCase = GetPopularMoviesUseCase(movieRepository)
+    private val searchMoviesUseCase = SearchMoviesUseCase(movieRepository)
 
     private val _state = MutableStateFlow<MovieListState>(MovieListState.Loading)
     val state: StateFlow<MovieListState> = _state.asStateFlow()
+
+    private val _filterData = MutableStateFlow<FilterData>(FilterData())
+    val filterData: StateFlow<FilterData> = _filterData.asStateFlow()
 
     private var currentPage = 1
     private var canLoadMore = true
 
     init {
-        loadPopularMovies()
+        loadFilterData()
+    }
+
+    private fun loadFilterData() {
+        viewModelScope.launch {
+            filterPreferences.filterData.collect { filterData ->
+                _filterData.value = filterData
+                // Обновляем бейдж при изменении фильтров
+                filterBadgeManager.setBadgeVisibility(filterData.hasActiveFilters)
+                // Автоматически перезагружаем фильмы при изменении фильтров
+                loadPopularMovies(useFilters = true)
+            }
+        }
     }
 
     fun loadPopularMovies(
         page: Int = 1,
-        year: String? = null,
-        minRating: String? = "7",
-        genre: String? = null
+        useFilters: Boolean = true
     ) {
-        viewModelScope.launch(errorHandler.coroutineExceptionHandler) {
+        viewModelScope.launch {
             _state.value = MovieListState.Loading
+
+            val currentFilters = _filterData.value
+            // Преобразуем пустые строки в null, чтобы не отправлять их в API
+            val year = if (useFilters) currentFilters.year.takeIf { it.isNotBlank() } else null
+            val minRating = if (useFilters) currentFilters.minRating.takeIf { it.isNotBlank() } else null
+            val genre = if (useFilters) currentFilters.genre.takeIf { it.isNotBlank() } else null
 
             val result = getPopularMoviesUseCase(
                 page = page,
@@ -64,13 +92,14 @@ class MovieListViewModel @Inject constructor(
         }
     }
 
+    // Остальные методы без изменений...
     fun searchMovies(query: String) {
         if (query.isBlank()) {
             loadPopularMovies()
             return
         }
 
-        viewModelScope.launch(errorHandler.coroutineExceptionHandler) {
+        viewModelScope.launch {
             _state.value = MovieListState.Loading
 
             val result = searchMoviesUseCase(query = query)
@@ -112,5 +141,12 @@ class MovieListViewModel @Inject constructor(
             canLoadMore = true,
             isSearching = false
         )
+    }
+
+    fun clearFilters() {
+        viewModelScope.launch {
+            filterPreferences.clearFilters()
+            // Не нужно вызывать loadPopularMovies здесь, так как он вызовется автоматически через collect
+        }
     }
 }

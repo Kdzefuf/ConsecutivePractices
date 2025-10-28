@@ -51,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.consecutivepractices.navigation.NavRoutes
 import com.example.consecutivepractices.ui.state.MovieListState
 import com.example.consecutivepractices.viewmodel.MovieListViewModel
 
@@ -193,7 +194,7 @@ fun MovieListScreen(
                                 MovieItem(
                                     movie = movie,
                                     onItemClick = {
-                                        navController.navigate("movie_details/${movie.id}") {
+                                        navController.navigate(NavRoutes.movieDetails(movie.id)) {
                                             launchSingleTop = true
                                         }
                                     }
