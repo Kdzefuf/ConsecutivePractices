@@ -49,7 +49,6 @@ fun FilterScreen(
     var minRating by remember { mutableStateOf("") }
     var year by remember { mutableStateOf("") }
 
-    // Инициализируем поля при получении данных
     LaunchedEffect(filterData) {
         genre = filterData.genre
         minRating = filterData.minRating
@@ -78,7 +77,6 @@ fun FilterScreen(
                 Button(
                     onClick = {
                         viewModel.saveFilters(genre, minRating, year)
-                        // Закрываем экран после сохранения
                         navController.popBackStack()
                     },
                     modifier = Modifier.weight(1f)
@@ -101,7 +99,6 @@ fun FilterScreen(
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
-            // Жанр
             OutlinedTextField(
                 value = genre,
                 onValueChange = { genre = it },
@@ -118,11 +115,9 @@ fun FilterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Минимальный рейтинг
             OutlinedTextField(
                 value = minRating,
                 onValueChange = { newValue ->
-                    // Разрешаем только цифры и точку
                     if (newValue.isEmpty() || newValue.matches(Regex("^[0-9]*(\\.[0-9]{0,1})?\$")) && newValue.length <= 4) {
                         if (newValue.isEmpty() || newValue.toDoubleOrNull()?.let { it >= 0.0 && it <= 10.0 } == true) {
                             minRating = newValue
@@ -145,12 +140,9 @@ fun FilterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Год
-            // Год - МИНИМАЛЬНАЯ ВАЛИДАЦИЯ
             OutlinedTextField(
                 value = year,
                 onValueChange = { newValue ->
-                    // Разрешаем любой ввод, но ограничиваем длину
                     if (newValue.length <= 4) {
                         year = newValue
                     }
@@ -171,7 +163,6 @@ fun FilterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Подсказки
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)

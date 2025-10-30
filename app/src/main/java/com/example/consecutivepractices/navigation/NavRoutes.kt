@@ -6,7 +6,6 @@ object NavRoutes {
     const val FILTERS = "filters"
     const val FAVORITES = "favorites"
 
-    // Хелпер функция для создания пути с параметрами
     fun movieDetails(movieId: Int): String {
         return "movie_details/$movieId"
     }

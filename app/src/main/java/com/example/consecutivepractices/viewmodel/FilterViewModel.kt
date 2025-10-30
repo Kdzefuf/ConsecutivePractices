@@ -13,7 +13,6 @@ class FilterViewModel @Inject constructor(
     private val filterPreferences: FilterPreferences
 ) : ViewModel() {
 
-    // Используем Flow напрямую, а не StateFlow
     val filterData: Flow<com.example.consecutivepractices.data.preferences.FilterData>
             = filterPreferences.filterData
 

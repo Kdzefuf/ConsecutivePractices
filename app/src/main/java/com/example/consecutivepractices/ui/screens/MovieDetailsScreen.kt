@@ -13,22 +13,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,7 +34,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -49,7 +42,6 @@ import coil.request.ImageRequest
 import com.example.consecutivepractices.ui.state.MovieDetailsState
 import com.example.consecutivepractices.viewmodel.MovieDetailsViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieDetailsScreen(
     navController: NavController,
@@ -60,49 +52,7 @@ fun MovieDetailsScreen(
     val isFavorite by viewModel.isFavorite.collectAsState()
     val context = LocalContext.current
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Детали фильма",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
-                    }
-                },
-                actions = {
-                    // Кнопка избранного
-                    if (state is MovieDetailsState.Success) {
-                        IconButton(
-                            onClick = { viewModel.toggleFavorite() }
-                        ) {
-                            Icon(
-                                if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = if (isFavorite) "Удалить из избранного" else "Добавить в избранное",
-                                tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-
-                    if (state is MovieDetailsState.Success) {
-                        IconButton(onClick = { viewModel.shareMovie(context) }) {
-                            Icon(Icons.Default.Share, contentDescription = "Поделиться")
-                        }
-                    }
-                    if (state is MovieDetailsState.Error) {
-                        IconButton(onClick = { viewModel.retry() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Повторить")
-                        }
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
+    Scaffold { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
@@ -213,7 +163,6 @@ fun MovieDetailsScreen(
                                     color = Color.Gray
                                 )
 
-                                // Индикатор избранного
                                 Spacer(modifier = Modifier.padding(horizontal = 8.dp))
                                 Text(
                                     text = "•",
@@ -231,6 +180,22 @@ fun MovieDetailsScreen(
                                     text = if (isFavorite) "В избранном" else "Добавить в избранное",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = if (isFavorite) Color.Red else Color.Gray
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Button(
+                                onClick = { viewModel.toggleFavorite() },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+                                Text(
+                                    text = if (isFavorite) "Удалить из избранного" else "Добавить в избранное"
                                 )
                             }
 
@@ -252,23 +217,6 @@ fun MovieDetailsScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2
                             )
-
-                            // Кнопка для добавления/удаления из избранного
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Button(
-                                onClick = { viewModel.toggleFavorite() },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(
-                                    if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                                Text(
-                                    text = if (isFavorite) "Удалить из избранного" else "Добавить в избранное"
-                                )
-                            }
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
