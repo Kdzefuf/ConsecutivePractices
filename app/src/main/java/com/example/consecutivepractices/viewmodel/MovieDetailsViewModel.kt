@@ -5,7 +5,13 @@ import android.content.Intent
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.consecutivepractices.domain.models.Movie
+import com.example.consecutivepractices.domain.repository.FavoriteRepository
+import com.example.consecutivepractices.domain.repository.MovieRepository
+import com.example.consecutivepractices.domain.usecase.AddToFavoritesUseCase
 import com.example.consecutivepractices.domain.usecase.GetMovieDetailsUseCase
+import com.example.consecutivepractices.domain.usecase.IsFavoriteUseCase
+import com.example.consecutivepractices.domain.usecase.RemoveFromFavoritesUseCase
 import com.example.consecutivepractices.ui.state.MovieDetailsState
 import com.example.consecutivepractices.util.ErrorHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,21 +24,31 @@ import javax.inject.Inject
 @HiltViewModel
 class MovieDetailsViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    private val getMovieDetailsUseCase: GetMovieDetailsUseCase,
+    private val movieRepository: MovieRepository,
+    private val favoriteRepository: FavoriteRepository,
     private val errorHandler: ErrorHandler
 ) : ViewModel() {
+
+    private val getMovieDetailsUseCase = GetMovieDetailsUseCase(movieRepository)
+    private val addToFavoritesUseCase = AddToFavoritesUseCase(favoriteRepository)
+    private val removeFromFavoritesUseCase = RemoveFromFavoritesUseCase(favoriteRepository)
+    private val isFavoriteUseCase = IsFavoriteUseCase(favoriteRepository)
 
     private val _state = MutableStateFlow<MovieDetailsState>(MovieDetailsState.Loading)
     val state: StateFlow<MovieDetailsState> = _state.asStateFlow()
 
+    private val _isFavorite = MutableStateFlow(false)
+    val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
+
     init {
         loadMovieDetails()
+        checkIfFavorite()
     }
 
     private fun loadMovieDetails() {
         val movieId = getMovieIdFromSavedState()
         movieId?.let { id ->
-            viewModelScope.launch(errorHandler.coroutineExceptionHandler) {
+            viewModelScope.launch {
                 _state.value = MovieDetailsState.Loading
 
                 val result = getMovieDetailsUseCase(movieId = id)
@@ -48,11 +64,35 @@ class MovieDetailsViewModel @Inject constructor(
         }
     }
 
+    private fun checkIfFavorite() {
+        val movieId = getMovieIdFromSavedState()
+        movieId?.let { id ->
+            viewModelScope.launch {
+                _isFavorite.value = isFavoriteUseCase(id)
+            }
+        }
+    }
+
     private fun getMovieIdFromSavedState(): Int? {
         return try {
             savedStateHandle.get<Int>("movieId")
         } catch (e: Exception) {
             savedStateHandle.get<String>("movieId")?.toIntOrNull()
+        }
+    }
+
+    fun toggleFavorite() {
+        val movie = (_state.value as? MovieDetailsState.Success)?.movie
+        movie?.let {
+            viewModelScope.launch {
+                if (_isFavorite.value) {
+                    removeFromFavoritesUseCase(movie.id)
+                    _isFavorite.value = false
+                } else {
+                    addToFavoritesUseCase(movie)
+                    _isFavorite.value = true
+                }
+            }
         }
     }
 
@@ -70,5 +110,6 @@ class MovieDetailsViewModel @Inject constructor(
 
     fun retry() {
         loadMovieDetails()
+        checkIfFavorite()
     }
 }

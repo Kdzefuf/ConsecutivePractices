@@ -1,6 +1,8 @@
 package com.example.consecutivepractices.di
 
+import com.example.consecutivepractices.data.repository.FavoriteRepositoryImpl
 import com.example.consecutivepractices.data.repository.MovieRepositoryImpl
+import com.example.consecutivepractices.domain.repository.FavoriteRepository
 import com.example.consecutivepractices.domain.repository.MovieRepository
 import dagger.Binds
 import dagger.Module
@@ -17,4 +19,10 @@ abstract class RepositoryModule {
     abstract fun bindMovieRepository(
         movieRepositoryImpl: MovieRepositoryImpl
     ): MovieRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFavoriteRepository(
+        favoriteRepositoryImpl: FavoriteRepositoryImpl
+    ): FavoriteRepository
 }

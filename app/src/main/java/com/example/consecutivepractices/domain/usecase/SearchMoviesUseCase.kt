@@ -2,9 +2,8 @@ package com.example.consecutivepractices.domain.usecase
 
 import com.example.consecutivepractices.domain.models.Movie
 import com.example.consecutivepractices.domain.repository.MovieRepository
-import javax.inject.Inject
 
-class SearchMoviesUseCase @Inject constructor(
+class SearchMoviesUseCase(
     private val repository: MovieRepository
 ) {
     suspend operator fun invoke(

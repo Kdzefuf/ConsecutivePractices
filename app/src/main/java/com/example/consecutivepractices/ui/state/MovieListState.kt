@@ -8,7 +8,8 @@ sealed class MovieListState {
         val movies: List<Movie>,
         val canLoadMore: Boolean = true,
         val isSearching: Boolean = false,
-        val searchQuery: String = ""
+        val searchQuery: String = "",
+        val isLoadingMore: Boolean = false // Добавляем флаг загрузки дополнительных данных
     ) : MovieListState()
     data class Error(val message: String) : MovieListState()
 }
