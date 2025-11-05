@@ -22,21 +22,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,10 +44,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.consecutivepractices.navigation.NavRoutes
 import com.example.consecutivepractices.ui.state.MovieListState
 import com.example.consecutivepractices.viewmodel.MovieListViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovieListScreen(
     navController: NavController,
@@ -62,70 +55,13 @@ fun MovieListScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    var searchQuery by remember { mutableStateOf("") }
-    val isSearching = when (state) {
-        is MovieListState.Success -> (state as MovieListState.Success).isSearching
-        else -> false
-    }
-
     LaunchedEffect(Unit) {
         if ((state as? MovieListState.Success)?.movies?.isEmpty() == true) {
             viewModel.loadPopularMovies()
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    if (isSearching) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = {
-                                searchQuery = it
-                                if (it.isNotBlank()) {
-                                    viewModel.searchMovies(it)
-                                }
-                            },
-                            placeholder = { Text("Поиск фильмов...") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                    } else {
-                        Text("Список фильмов")
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            val newSearchState = !isSearching
-                            viewModel.setSearchState(newSearchState, searchQuery)
-                            if (!newSearchState) {
-                                searchQuery = ""
-                                viewModel.loadPopularMovies()
-                            }
-                        }
-                    ) {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = if (isSearching) "Закрыть поиск" else "Поиск"
-                        )
-                    }
-                    IconButton(
-                        onClick = {
-                            if (isSearching && searchQuery.isNotBlank()) {
-                                viewModel.searchMovies(searchQuery)
-                            } else {
-                                viewModel.loadPopularMovies()
-                            }
-                        }
-                    ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Обновить")
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
+    Scaffold { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
@@ -168,11 +104,7 @@ fun MovieListScreen(
                             Button(
                                 onClick = {
                                     viewModel.clearError()
-                                    if (isSearching && searchQuery.isNotBlank()) {
-                                        viewModel.searchMovies(searchQuery)
-                                    } else {
-                                        viewModel.loadPopularMovies()
-                                    }
+                                    viewModel.loadPopularMovies()
                                 }
                             ) {
                                 Text("Повторить")
@@ -193,7 +125,7 @@ fun MovieListScreen(
                                 MovieItem(
                                     movie = movie,
                                     onItemClick = {
-                                        navController.navigate("movie_details/${movie.id}") {
+                                        navController.navigate(NavRoutes.movieDetails(movie.id)) {
                                             launchSingleTop = true
                                         }
                                     }
@@ -208,10 +140,31 @@ fun MovieListScreen(
                                             .padding(16.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Button(
-                                            onClick = { viewModel.loadNextPage() }
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.spacedBy(16.dp)
                                         ) {
-                                            Text("Загрузить еще")
+                                            if (currentState.isLoadingMore) {
+                                                // Показываем индикатор загрузки вместо кнопки
+                                                Column(
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    CircularProgressIndicator()
+                                                    Text(
+                                                        text = "Загрузка дополнительных фильмов...",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = Color.Gray
+                                                    )
+                                                }
+                                            } else {
+                                                // Показываем кнопку для загрузки следующей страницы
+                                                Button(
+                                                    onClick = { viewModel.loadNextPage() }
+                                                ) {
+                                                    Text("Загрузить еще")
+                                                }
+                                            }
                                         }
                                     }
                                 }
