@@ -8,13 +8,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -43,13 +45,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.consecutivepractices.navigation.NavRoutes
+import com.example.consecutivepractices.ui.screens.EditProfileScreen
 import com.example.consecutivepractices.ui.screens.FavoritesScreen
 import com.example.consecutivepractices.ui.screens.FilterScreen
 import com.example.consecutivepractices.ui.screens.MovieDetailsScreen
 import com.example.consecutivepractices.ui.screens.MovieListScreen
+import com.example.consecutivepractices.ui.screens.ProfileScreen
 import com.example.consecutivepractices.ui.theme.MovieAppTheme
 import com.example.consecutivepractices.viewmodel.MovieDetailsViewModel
 import com.example.consecutivepractices.viewmodel.MovieListViewModel
+import com.example.consecutivepractices.viewmodel.ProfileViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -72,12 +77,22 @@ fun MovieApp() {
     val currentRoute = navBackStackEntry?.destination?.route
     val context = LocalContext.current
 
+    val profileViewModel: ProfileViewModel = hiltViewModel()
+
     Scaffold(
         topBar = {
-            UnifiedTopAppBar(navController, currentRoute, context)
+            UnifiedTopAppBar(
+                navController = navController,
+                currentRoute = currentRoute,
+                context = context,
+                profileViewModel = profileViewModel,
+                onEditProfileClick = {
+                    navController.navigate(NavRoutes.EDIT_PROFILE)
+                }
+            )
         },
         bottomBar = {
-            if (currentRoute in listOf(NavRoutes.MOVIE_LIST, NavRoutes.FAVORITES)) {
+            if (currentRoute in listOf(NavRoutes.MOVIE_LIST, NavRoutes.FAVORITES, NavRoutes.PROFILE)) {
                 BottomNavigationBar(navController, currentRoute)
             }
         }
@@ -92,16 +107,25 @@ fun MovieApp() {
             }
             composable(NavRoutes.MOVIE_DETAILS) { backStackEntry ->
                 val movieId = backStackEntry.arguments?.getString("movieId")?.toIntOrNull()
-                MovieDetailsScreen(
-                    navController = navController,
-                    movieId = movieId
-                )
+                MovieDetailsScreen(navController = navController, movieId = movieId)
             }
             composable(NavRoutes.FILTERS) {
                 FilterScreen(navController = navController)
             }
             composable(NavRoutes.FAVORITES) {
                 FavoritesScreen(navController = navController)
+            }
+            composable(NavRoutes.PROFILE) {
+                ProfileScreen(
+                    navController = navController,
+                    viewModel = profileViewModel
+                )
+            }
+            composable(NavRoutes.EDIT_PROFILE) {
+                EditProfileScreen(
+                    navController = navController,
+                    viewModel = profileViewModel
+                )
             }
         }
     }
@@ -112,18 +136,18 @@ fun MovieApp() {
 fun UnifiedTopAppBar(
     navController: NavController,
     currentRoute: String?,
-    context: android.content.Context
+    context: android.content.Context,
+    profileViewModel: ProfileViewModel,
+    onEditProfileClick: () -> Unit
 ) {
     val movieListViewModel: MovieListViewModel = hiltViewModel()
     val filterData by movieListViewModel.filterData.collectAsState()
     val showBadge = filterData.hasActiveFilters
 
-    // Для экрана деталей фильма
     val movieDetailsViewModel: MovieDetailsViewModel = hiltViewModel()
     val movieDetailsState by movieDetailsViewModel.state.collectAsState()
     val isFavorite by movieDetailsViewModel.isFavorite.collectAsState()
 
-    // Состояние поиска для главного экрана
     var searchQuery by remember { mutableStateOf("") }
     val isSearching = when (val state = movieListViewModel.state.collectAsState().value) {
         is com.example.consecutivepractices.ui.state.MovieListState.Success -> state.isSearching
@@ -134,14 +158,12 @@ fun UnifiedTopAppBar(
         title = {
             when {
                 currentRoute == NavRoutes.MOVIE_DETAILS -> {
-                    Text(
-                        "Детали фильма",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Text("Детали фильма", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 currentRoute == NavRoutes.FILTERS -> Text("Фильтры")
                 currentRoute == NavRoutes.FAVORITES -> Text("Избранное")
+                currentRoute == NavRoutes.PROFILE -> Text("Профиль")
+                currentRoute == NavRoutes.EDIT_PROFILE -> Text("Редактирование профиля")
                 currentRoute == NavRoutes.MOVIE_LIST && isSearching -> {
                     OutlinedTextField(
                         value = searchQuery,
@@ -161,6 +183,11 @@ fun UnifiedTopAppBar(
         },
         navigationIcon = {
             when {
+                currentRoute == NavRoutes.EDIT_PROFILE -> {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                    }
+                }
                 currentRoute != NavRoutes.MOVIE_LIST -> {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
@@ -172,7 +199,6 @@ fun UnifiedTopAppBar(
         actions = {
             when (currentRoute) {
                 NavRoutes.MOVIE_LIST -> {
-                    // Кнопка поиска
                     IconButton(
                         onClick = {
                             val newSearchState = !isSearching
@@ -188,8 +214,6 @@ fun UnifiedTopAppBar(
                             contentDescription = if (isSearching) "Закрыть поиск" else "Поиск"
                         )
                     }
-
-                    // Кнопка обновления
                     IconButton(
                         onClick = {
                             if (isSearching && searchQuery.isNotBlank()) {
@@ -201,28 +225,16 @@ fun UnifiedTopAppBar(
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Обновить")
                     }
-
-                    // Кнопка избранного
                     IconButton(
-                        onClick = {
-                            navController.navigate(NavRoutes.FAVORITES)
-                        }
+                        onClick = { navController.navigate(NavRoutes.FAVORITES) }
                     ) {
                         Icon(Icons.Default.Favorite, contentDescription = "Избранное")
                     }
-
-                    // Кнопка фильтров с бейджем
                     IconButton(
-                        onClick = {
-                            navController.navigate(NavRoutes.FILTERS)
-                        }
+                        onClick = { navController.navigate(NavRoutes.FILTERS) }
                     ) {
                         BadgedBox(
-                            badge = {
-                                if (showBadge) {
-                                    Badge()
-                                }
-                            }
+                            badge = { if (showBadge) Badge() }
                         ) {
                             Icon(Icons.Default.FilterList, contentDescription = "Фильтры")
                         }
@@ -230,11 +242,8 @@ fun UnifiedTopAppBar(
                 }
 
                 NavRoutes.MOVIE_DETAILS -> {
-                    // Кнопка избранного для деталей фильма
                     if (movieDetailsState is com.example.consecutivepractices.ui.state.MovieDetailsState.Success) {
-                        IconButton(
-                            onClick = { movieDetailsViewModel.toggleFavorite() }
-                        ) {
+                        IconButton(onClick = { movieDetailsViewModel.toggleFavorite() }) {
                             Icon(
                                 if (isFavorite) Icons.Default.Favorite else Icons.Rounded.FavoriteBorder,
                                 contentDescription = if (isFavorite) "Удалить из избранного" else "Добавить в избранное",
@@ -242,47 +251,41 @@ fun UnifiedTopAppBar(
                             )
                         }
                     }
-
-                    // Кнопка поделиться для деталей фильма
                     if (movieDetailsState is com.example.consecutivepractices.ui.state.MovieDetailsState.Success) {
-                        IconButton(
-                            onClick = {
-                                movieDetailsViewModel.shareMovie(context)
-                            }
-                        ) {
+                        IconButton(onClick = { movieDetailsViewModel.shareMovie(context) }) {
                             Icon(Icons.Default.Share, contentDescription = "Поделиться")
                         }
                     }
-
-                    // Кнопка повтора при ошибке
                     if (movieDetailsState is com.example.consecutivepractices.ui.state.MovieDetailsState.Error) {
-                        IconButton(
-                            onClick = { movieDetailsViewModel.retry() }
-                        ) {
+                        IconButton(onClick = { movieDetailsViewModel.retry() }) {
                             Icon(Icons.Default.Refresh, contentDescription = "Повторить")
                         }
                     }
                 }
 
                 NavRoutes.FAVORITES -> {
-                    // Кнопка обновления для избранного
-                    IconButton(
-                        onClick = {
-                            // Можно добавить функциональность обновления списка избранного
-                        }
-                    ) {
+                    IconButton(onClick = { /* optional */ }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Обновить")
                     }
                 }
 
                 NavRoutes.FILTERS -> {
-                    // Кнопка сброса фильтров
-                    IconButton(
-                        onClick = {
-                            // Можно добавить функциональность сброса фильтров
-                        }
-                    ) {
+                    IconButton(onClick = { /* optional */ }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Сбросить фильтры")
+                    }
+                }
+
+                NavRoutes.PROFILE -> {
+                    IconButton(onClick = onEditProfileClick) {
+                        Icon(Icons.Default.Edit, contentDescription = "Редактировать")
+                    }
+                }
+
+                NavRoutes.EDIT_PROFILE -> {
+                    IconButton(onClick = {
+                        navController.popBackStack()
+                    }) {
+                        Icon(Icons.Default.Check, contentDescription = "Сохранить")
                     }
                 }
             }
@@ -313,6 +316,16 @@ fun BottomNavigationBar(navController: NavController, currentRoute: String?) {
             },
             icon = { Icon(Icons.Default.Favorite, contentDescription = "Избранное") },
             label = { Text("Избранное") }
+        )
+        NavigationBarItem(
+            selected = currentRoute == NavRoutes.PROFILE,
+            onClick = {
+                navController.navigate(NavRoutes.PROFILE) {
+                    launchSingleTop = true
+                }
+            },
+            icon = { Icon(Icons.Default.Person, contentDescription = "Профиль") },
+            label = { Text("Профиль") }
         )
     }
 }
