@@ -25,8 +25,8 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun updateProfile(newProfile: UserProfile) {
-        _profile.value = newProfile
         viewModelScope.launch {
+            _profile.value = newProfile
             profilePreferences.saveProfile(newProfile)
         }
     }

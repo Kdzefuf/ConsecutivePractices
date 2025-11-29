@@ -92,11 +92,13 @@ dependencies {
 
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    // DataStore для сохранения настроек и избранного
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
-    // Kotlinx Serialization для сохранения объектов Movie
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    implementation("androidx.core:core-ktx:1.12.0")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
 }
 
 kapt {

@@ -2,6 +2,7 @@ package com.example.consecutivepractices.ui.screens
 
 import android.Manifest
 import android.app.Activity
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -15,7 +16,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -33,9 +38,12 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.consecutivepractices.R
 import com.example.consecutivepractices.data.models.UserProfile
+import com.example.consecutivepractices.service.NotificationScheduler
+import com.example.consecutivepractices.util.TimeValidator
 import com.example.consecutivepractices.viewmodel.ProfileViewModel
 import java.io.File
 import java.io.IOException
+import java.util.Calendar
 
 @Composable
 fun EditProfileScreen(
@@ -49,15 +57,45 @@ fun EditProfileScreen(
     var resumeUrl by remember { mutableStateOf(profile.resumeUrl) }
     var position by remember { mutableStateOf(profile.position) }
     var avatarUri by remember { mutableStateOf(profile.avatarUri) }
+    var favoritePairTime by remember { mutableStateOf(profile.favoritePairTime) }
 
     var showImageSourceDialog by remember { mutableStateOf(false) }
     var cameraPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var timeError by remember { mutableStateOf<String?>(null) }
+
+    val notificationScheduler = remember { NotificationScheduler(context) }
+
+    val showTimePicker = {
+        val calendar = Calendar.getInstance()
+
+        if (favoritePairTime.isNotEmpty() && TimeValidator.isValidTime(favoritePairTime)) {
+            val parts = favoritePairTime.split(":")
+            calendar.set(Calendar.HOUR_OF_DAY, parts[0].toInt())
+            calendar.set(Calendar.MINUTE, parts[1].toInt())
+        }
+
+        val timePickerDialog = TimePickerDialog(
+            context,
+            { _, hour, minute ->
+                val selectedTime = String.format("%02d:%02d", hour, minute)
+                favoritePairTime = selectedTime
+                timeError = null
+            },
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+            true
+        )
+
+        timePickerDialog.setTitle("Выберите время пары")
+        timePickerDialog.show()
+    }
 
     LaunchedEffect(profile) {
         fullName = profile.fullName
         resumeUrl = profile.resumeUrl
         position = profile.position
         avatarUri = profile.avatarUri
+        favoritePairTime = profile.favoritePairTime
     }
 
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -95,27 +133,33 @@ fun EditProfileScreen(
         }
     }
 
-    if (showImageSourceDialog) {
-        AlertDialog(
-            onDismissRequest = { showImageSourceDialog = false },
-            title = { Text("Выберите источник") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showImageSourceDialog = false
-                    requestPermissionsAndOpenCamera(permissionLauncher, context)
-                }) {
-                    Text("Камера")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showImageSourceDialog = false
-                    requestPermissionsAndOpenGallery(permissionLauncher, context)
-                }) {
-                    Text("Галерея")
+    val isTimeValid = remember(favoritePairTime) {
+        favoritePairTime.isEmpty() || TimeValidator.isValidTime(favoritePairTime)
+    }
+
+    val canSave = remember(fullName, favoritePairTime) {
+        fullName.isNotBlank() && isTimeValid
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (canSave) {
+                val newProfile = UserProfile(
+                    fullName = fullName,
+                    avatarUri = avatarUri,
+                    resumeUrl = resumeUrl,
+                    position = position,
+                    favoritePairTime = favoritePairTime
+                )
+                viewModel.updateProfile(newProfile)
+
+                if (favoritePairTime.isNotEmpty() && TimeValidator.isValidTime(favoritePairTime)) {
+                    notificationScheduler.scheduleNotification(favoritePairTime, fullName)
+                } else {
+                    notificationScheduler.cancelNotification()
                 }
             }
-        )
+        }
     }
 
     Column(
@@ -146,8 +190,14 @@ fun EditProfileScreen(
         OutlinedTextField(
             value = fullName,
             onValueChange = { fullName = it },
-            label = { Text("ФИО") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Имя") },
+            modifier = Modifier.fillMaxWidth(),
+            isError = fullName.isBlank(),
+            supportingText = {
+                if (fullName.isBlank()) {
+                    Text("Имя не может быть пустым")
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -164,26 +214,77 @@ fun EditProfileScreen(
         OutlinedTextField(
             value = resumeUrl,
             onValueChange = { resumeUrl = it },
-            label = { Text("Ссылка на резюме (PDF)") },
+            label = { Text("Ссылка") },
             modifier = Modifier.fillMaxWidth()
         )
-    }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.updateProfile(
-                UserProfile(
-                    fullName = fullName,
-                    avatarUri = avatarUri,
-                    resumeUrl = resumeUrl,
-                    position = position
-                )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = favoritePairTime,
+            onValueChange = {
+                favoritePairTime = it
+                timeError = if (it.isNotEmpty() && !TimeValidator.isValidTime(it)) {
+                    "Некорректный формат времени"
+                } else {
+                    null
+                }
+            },
+            label = { Text("Время любимой пары") },
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                IconButton(onClick = showTimePicker) {
+                    Icon(Icons.Default.Schedule, contentDescription = "Выбрать время")
+                }
+            },
+            isError = timeError != null,
+            supportingText = {
+                if (timeError != null) {
+                    Text(timeError!!)
+                } else {
+                    Text("Формат: HH:mm")
+                }
+            },
+            placeholder = { Text("18:30") }
+        )
+
+        if (!canSave) {
+            Text(
+                text = "Заполните обязательные поля правильно",
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 16.dp)
             )
         }
     }
+
+    if (showImageSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showImageSourceDialog = false },
+            title = { Text("Выберите источник") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showImageSourceDialog = false
+                    requestPermissionsAndOpenCamera(permissionLauncher, context)
+                }) {
+                    Text("Камера")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showImageSourceDialog = false
+                    requestPermissionsAndOpenGallery(permissionLauncher, context)
+                }) {
+                    Text("Галерея")
+                }
+            }
+        )
+    }
 }
 
-fun requestPermissionsAndOpenGallery(launcher: ManagedActivityResultLauncher<Array<String>, Map<String, @JvmSuppressWildcards Boolean>>, context: Context) {
+fun requestPermissionsAndOpenGallery(
+    launcher: ManagedActivityResultLauncher<Array<String>, Map<String, @JvmSuppressWildcards Boolean>>,
+    context: Context
+) {
     val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
     } else {
@@ -192,7 +293,10 @@ fun requestPermissionsAndOpenGallery(launcher: ManagedActivityResultLauncher<Arr
     launcher.launch(permissions)
 }
 
-fun requestPermissionsAndOpenCamera(launcher: ManagedActivityResultLauncher<Array<String>, Map<String, @JvmSuppressWildcards Boolean>>, context: Context) {
+fun requestPermissionsAndOpenCamera(
+    launcher: ManagedActivityResultLauncher<Array<String>, Map<String, @JvmSuppressWildcards Boolean>>,
+    context: Context
+) {
     launcher.launch(arrayOf(Manifest.permission.CAMERA))
 }
 

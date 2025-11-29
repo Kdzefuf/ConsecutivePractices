@@ -3,6 +3,8 @@ package com.example.consecutivepractices.di
 import android.content.Context
 import com.example.consecutivepractices.data.preferences.FavoritesPreferences
 import com.example.consecutivepractices.data.preferences.FilterPreferences
+import com.example.consecutivepractices.data.preferences.ProfilePreferences
+import com.example.consecutivepractices.data.preferences.ProfilePreferencesImpl
 import com.example.consecutivepractices.util.ErrorHandler
 import com.example.consecutivepractices.util.FilterBadgeManager
 import dagger.Module
@@ -38,5 +40,11 @@ object AppModule {
     @Singleton
     fun provideFilterBadgeManager(): FilterBadgeManager {
         return FilterBadgeManager()
+    }
+
+    @Provides
+    @Singleton
+    fun provideProfilePreferences(@ApplicationContext context: Context): ProfilePreferences {
+        return ProfilePreferencesImpl(context)
     }
 }
