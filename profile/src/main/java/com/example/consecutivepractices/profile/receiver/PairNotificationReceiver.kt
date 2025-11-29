@@ -48,7 +48,6 @@ class PairNotificationReceiver : BroadcastReceiver() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        // Используем неявный Intent с действием, которое обрабатывается в манифесте
         val intent = Intent().apply {
             action = "com.example.consecutivepractices.OPEN_MAIN_ACTIVITY"
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
