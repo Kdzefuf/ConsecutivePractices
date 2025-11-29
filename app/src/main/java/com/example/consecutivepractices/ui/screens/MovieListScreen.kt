@@ -44,7 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.consecutivepractices.navigation.NavRoutes
+import com.example.consecutivepractices.core.navigation.NavRoutes
 import com.example.consecutivepractices.ui.state.MovieListState
 import com.example.consecutivepractices.viewmodel.MovieListViewModel
 

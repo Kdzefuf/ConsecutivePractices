@@ -44,17 +44,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.consecutivepractices.navigation.NavRoutes
-import com.example.consecutivepractices.ui.screens.EditProfileScreen
+import com.example.consecutivepractices.core.navigation.NavRoutes
+import com.example.consecutivepractices.profile.ui.screens.EditProfileScreen
+import com.example.consecutivepractices.profile.ui.screens.ProfileScreen
+import com.example.consecutivepractices.profile.viewmodel.ProfileViewModel
 import com.example.consecutivepractices.ui.screens.FavoritesScreen
 import com.example.consecutivepractices.ui.screens.FilterScreen
 import com.example.consecutivepractices.ui.screens.MovieDetailsScreen
 import com.example.consecutivepractices.ui.screens.MovieListScreen
-import com.example.consecutivepractices.ui.screens.ProfileScreen
-import com.example.consecutivepractices.ui.theme.MovieAppTheme
+import com.example.consecutivepractices.core.ui.theme.MovieAppTheme
 import com.example.consecutivepractices.viewmodel.MovieDetailsViewModel
 import com.example.consecutivepractices.viewmodel.MovieListViewModel
-import com.example.consecutivepractices.viewmodel.ProfileViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
