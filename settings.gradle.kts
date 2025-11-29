@@ -21,4 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "ConsecutivePractices"
 include(":app")
- 
+include(":core")
+include(":data")
+include(":profile")

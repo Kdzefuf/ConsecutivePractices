@@ -37,11 +37,6 @@
             </intent-filter>
         </activity>
 
-        <receiver
-            android:name=".receiver.PairNotificationReceiver"
-            android:enabled="true"
-            android:exported="false" />
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -51,6 +46,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <receiver
+            android:name="com.example.consecutivepractices.profile.receiver.PairNotificationReceiver"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 
 </manifest>
